@@ -5,8 +5,6 @@ A fraud detection system built around one idea: coordinated fraud is a **network
 A full write-up of the methodology and results lives in [`research_paper/`](https://www.researchgate.net/publication/410744657_A_Generalized_Heterogeneous_Graph_Neural_Network_Architecture_for_Multi-Domain_Financial_Fraud_Detection_From_Payment_Fraud_to_Anti-Money-Laundering_Monitoring/).
 
 ## Results at a glance
-<img width="1920" height="916" alt="Screenshot (647)" src="https://github.com/user-attachments/assets/5ba430ba-88ab-447a-b52a-563957544bee" />
-
 <img width="1920" height="910" alt="Screenshot (645)" src="https://github.com/user-attachments/assets/de0b0138-e016-4e18-8edb-f0bce3380132" />
 <img width="1920" height="872" alt="Screenshot (649)" src="https://github.com/user-attachments/assets/c239cf2e-c03a-4991-97a2-4e73fd2797cb" />
 <img width="1920" height="897" alt="Screenshot (648)" src="https://github.com/user-attachments/assets/9685e983-99f0-41d1-a6ba-e5c6b0cd8340" />
