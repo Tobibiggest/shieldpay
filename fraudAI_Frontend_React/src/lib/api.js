@@ -1,4 +1,4 @@
-// Shared API base URL. Existing pages hardcode http://127.0.0.1:5000 inline
-// (see PredictForm.jsx, homepage.jsx) -- this file is only used by newer
-// pages (starting with StatementUpload.jsx) and is not a refactor of those.
-export const API_BASE_URL = "http://127.0.0.1:5000";
+// Shared API base URL. Set VITE_API_BASE_URL at build time to point at a
+// deployed backend (e.g. its Railway URL); falls back to the local Flask
+// dev server otherwise.
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";

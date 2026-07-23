@@ -39,6 +39,7 @@ HGT is the strongest model in both domains — a 115% relative AUPRC improvement
 | [`AI_model_Py_Scripts/`](AI_model_Py_Scripts/) | The original notebook-based GAN + Random Forest prototype, superseded by `fraud_detection/`. |
 | [`research_paper/`](research_paper/) | Written summary of the architecture, methodology, and results. |
 | [`SystemDesignDiagrams/`](SystemDesignDiagrams/) | Architecture diagrams referenced below. |
+| [`RAILWAY_DEPLOY.md`](RAILWAY_DEPLOY.md) | How to deploy all three apps to Railway as one project / three services, with required env vars. |
 
 ## System architecture
 

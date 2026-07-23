@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "./src/lib/api";
 
 const PredictForm = () => {
   const [features, setFeatures] = useState([
@@ -37,7 +38,7 @@ const PredictForm = () => {
 
   const handlePredict = async () => {
     try {
-      const response = await axios.post("http://127.0.0.1:5000/predict", {
+      const response = await axios.post(`${API_BASE_URL}/predict`, {
         features: features,
       });
       setPrediction(response.data.prediction);

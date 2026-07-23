@@ -1,0 +1,8 @@
+# Reuses the shared ML/serving dependency set (path is relative to this
+# file, so this works regardless of which directory Railway/pip is invoked
+# from, as long as the sibling fraud_detection/ directory is present).
+-r ../fraud_detection/requirements.txt
+
+# Production WSGI server -- Flask's built-in dev server (app.run()) is not
+# meant for production traffic and is only used for local development here.
+gunicorn>=21.2

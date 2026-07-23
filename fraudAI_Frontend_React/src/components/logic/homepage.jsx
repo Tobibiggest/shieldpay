@@ -12,6 +12,7 @@ import { auth, db } from "./firebase.js";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api";
 import TransactionSimulation from '../logic/TransactionSimulation'
 import {
     AlertDialog,
@@ -5103,7 +5104,7 @@ import {
         setVerificationStatus(null);
         try {
           // Step 1: Resolve account name via Paystack (proxied through Flask)
-          const resolveRes = await fetch("http://127.0.0.1:5000/verify-account", {
+          const resolveRes = await fetch(`${API_BASE_URL}/verify-account`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ account_number: recipientAccountNumber, bank_code: recipientBankCode }),
@@ -5149,7 +5150,7 @@ import {
               modelData["Geo-Location Flags_normal"] || 0,
               modelData["Geo-Location Flags_unusual"] || 0,
             ];
-            const predRes = await fetch("http://127.0.0.1:5000/predict", {
+            const predRes = await fetch(`${API_BASE_URL}/predict`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ features }),
