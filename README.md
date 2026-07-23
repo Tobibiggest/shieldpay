@@ -1,4 +1,4 @@
-# ShieldPay — Graph-Native, Multi-Domain Fraud Detection Platform
+# 🌟ShieldPayAI — Graph-Native, Multi-Domain Fraud Detection Platform
 
 A fraud detection system built around one idea: coordinated fraud is a **network** problem, not a per-row problem. Mule networks, layering chains, and smurfing rings are defined by relationships between accounts — shared devices, shared IP addresses, funds passed hop-to-hop through intermediaries — not by any single transaction's own features. A model that scores each transaction independently cannot see that structure no matter how well-tuned it is. This project makes the transaction graph a first-class model input, evaluates it against a strong tabular baseline under a benchmark specifically designed so the comparison is meaningful (fraud is feature-camouflaged, detectable only via graph structure), and generalizes the architecture to more than one fraud domain.
 
@@ -36,9 +36,47 @@ HGT is the strongest model in both domains — a 115% relative AUPRC improvement
 | [`AI_model_server_Flask/`](AI_model_server_Flask/) | Flask API serving both the legacy tabular model and the new graph-ensemble/statement-analysis endpoints. |
 | [`fraudAI_Frontend_React/`](fraudAI_Frontend_React/) | The main React app (dashboard, transactions, statement upload). |
 | [`shieldpay-landing page/`](shieldpay-landing%20page/) | A separate marketing/landing site, not wired to the ML backend. |
-| [`AI_model_Py_Scripts/`](AI_model_Py_Scripts/) | The original notebook-based GAN + Random Forest prototype. Kept for reference; superseded by `fraud_detection/`. |
+| [`AI_model_Py_Scripts/`](AI_model_Py_Scripts/) | The original notebook-based GAN + Random Forest prototype, superseded by `fraud_detection/`. |
 | [`research_paper/`](research_paper/) | Written summary of the architecture, methodology, and results. |
-| [`SystemDesignDiagrams/`](SystemDesignDiagrams/) | Architecture diagrams for the frontend/product flow. |
+| [`SystemDesignDiagrams/`](SystemDesignDiagrams/) | Architecture diagrams referenced below. |
+
+## System architecture
+
+### Product flow
+
+![System Design](SystemDesignDiagrams/SystemDesign.png)
+
+Authentication (Google Sign-In → Firebase) assigns/selects a UPI ID, the user enters transaction details, the transaction process calls the fraud detection service, and the result gates transaction execution before it's recorded to transaction history.
+
+![System Architecture and Workflow Overview](SystemDesignDiagrams/WorkFlowDiagram.png)
+
+### ML pipeline
+
+The "AI Fraud Detection" step above is backed by the [`fraud_detection/`](fraud_detection/) package:
+
+```
+Dataset adapter (schema.py / domain_schema.py)
+        │  canonical dataframe: entities, features, timestamps, label
+        ▼
+Graph construction (data/graph/) ──► homogeneous / heterogeneous / hypergraph
+        │                              transaction graphs (PyG HeteroData)
+        ▼
+Model layer (models/)
+   ├─ XGBoost (tabular baseline)
+   ├─ Conditional WGAN-GP (minority-class augmentation)
+   ├─ GraphSAGE / GAT (homogeneous graph)
+   ├─ HGT / R-GCN (heterogeneous graph)
+   ├─ Hypergraph convolution (n-ary collusion)
+   └─ Autoencoder / IsolationForest (unsupervised anomaly scoring)
+        │
+        ▼
+Calibrated stacking ensemble (models/ensemble/)
+        │
+        ▼
+Serving (AI_model_server_Flask/app.py: /predict/v2)
+```
+
+The same pipeline, unmodified, runs against either the payments schema or the AML schema (`fraud_detection/fraud_detection/domains/aml/`) — only the schema/adapter/generator at the top changes. A separate, unsupervised path (`statement_analysis/`) analyzes real, unlabeled bank statements without going through this trained pipeline at all, since a model trained on synthetic data has no honest basis to score real data it's never seen labels for.
 
 ## Getting started
 
@@ -108,7 +146,3 @@ npm run dev
 ```
 
 Opens at `http://localhost:5173` by default (Vite). Needs its own `.env` with Firebase config — see the `VITE_FIREBASE_*` keys referenced in `src/components/logic/firebase.js`.
-
-## Project history
-
-This project originated as a hackathon prototype (1st place, DigiPay Pro NPCI Competition, IIT Bombay Techfest 2024) combining a GAN and a Random Forest classifier. That original implementation is preserved in `AI_model_Py_Scripts/` for reference; the system has since been substantially rebuilt into the graph-native, multi-domain platform described above.
