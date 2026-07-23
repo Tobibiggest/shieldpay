@@ -1,344 +1,114 @@
-# 🌟SafePayAI
-SafePayAI is an advanced fraud detection and prevention application designed to safeguard digital transactions using cutting-edge artificial intelligence techniques. With seamless integration of machine learning models and user-friendly interfaces, SafePayAI offers robust solutions for real-time fraud detection and mitigation.
+# ShieldPay — Graph-Native, Multi-Domain Fraud Detection Platform
 
-By leveraging Generative Adversarial Networks (GANs) for synthetic data generation and Random Forest classifiers for accurate predictions, SafePayAI ensures unparalleled security and efficiency in transaction monitoring.
+A fraud detection system built around one idea: coordinated fraud is a **network** problem, not a per-row problem. Mule networks, layering chains, and smurfing rings are defined by relationships between accounts — shared devices, shared IP addresses, funds passed hop-to-hop through intermediaries — not by any single transaction's own features. A model that scores each transaction independently cannot see that structure no matter how well-tuned it is. This project makes the transaction graph a first-class model input, evaluates it against a strong tabular baseline under a benchmark specifically designed so the comparison is meaningful (fraud is feature-camouflaged, detectable only via graph structure), and generalizes the architecture to more than one fraud domain.
 
----
+A full write-up of the methodology and results lives in [`research_paper/`](research_paper/).
 
-## 📦 ML system upgrade: `fraud_detection/`
+## Results at a glance
 
-The AI/ML work described below (GAN + Random Forest, in `AI_model_Py_Scripts/`) is the original, historical implementation and is kept as-is for reference. **The active, graph-aware ML system now lives in [`fraud_detection/`](fraud_detection/)**, a proper installable Python package with:
+**Payments** (synthetic benchmark, ~3% fraud, temporal split):
 
-- A conditional WGAN-GP (replacing the original unconditional GAN)
-- GraphSAGE, GAT, and a Heterogeneous Graph Transformer (HGT) over a transaction/account/device/IP/merchant graph
-- An optional hypergraph model for n-ary collusion detection
-- Gradient-boosted trees (XGBoost/LightGBM), an autoencoder, and IsolationForest as additional base models
-- A calibrated stacking ensemble combining all of the above
-- A dataset-agnostic schema/adapter layer (proven portable to IEEE-CIS-shaped data, not just this project's own synthetic generator)
-- A live serving integration in `AI_model_server_Flask/app.py` (`/predict/v2`)
+| Model | AUPRC | ROC-AUC | Recall@1%FPR |
+|---|---|---|---|
+| XGBoost (tabular baseline) | 0.371 | 0.659 | 0.310 |
+| GraphSAGE | 0.733 | 0.974 | 0.575 |
+| GAT | 0.678 | 0.951 | 0.563 |
+| R-GCN | 0.537 | 0.919 | 0.368 |
+| Hypergraph Conv. | 0.670 | 0.891 | 0.626 |
+| **Heterogeneous Graph Transformer (HGT)** | **0.797** | **0.983** | **0.701** |
+| Calibrated ensemble | 0.721 | 0.951 | 0.718 |
 
-See [`fraud_detection/docs/DATASETS.md`](fraud_detection/docs/DATASETS.md) and [`fraud_detection/docs/INSTALL_PYG.md`](fraud_detection/docs/INSTALL_PYG.md) to get started, and `fraud_detection/requirements.txt` for dependencies. On a real relational fraud dataset, the heterogeneous graph model roughly doubles AUPRC over the original tabular Random Forest approach.
+**Anti-Money-Laundering** (independent domain, layering chains + smurfing, identical model code):
 
----
+| Model | AUPRC | ROC-AUC | Recall@1%FPR |
+|---|---|---|---|
+| XGBoost (tabular baseline) | 0.131 | 0.570 | 0.103 |
+| GraphSAGE | 0.247 | 0.895 | 0.184 |
+| **HGT** | **0.614** | **0.970** | **0.667** |
 
+HGT is the strongest model in both domains — a 115% relative AUPRC improvement over XGBoost on payments, and 369% on AML — using **the same, unmodified model code** in both cases. Only the domain schema (which entities exist, how they relate) changes between them. See [`fraud_detection/fraud_detection/domains/README.md`](fraud_detection/fraud_detection/domains/README.md) for how that generalization works and how to add a new domain.
 
+## What's in this repository
 
-# 🏆 Achievements and Recognition
-- 1st Place Winner at DigiPay Pro NPCI Competition IIT Bombay Techfest 2024
-- SafePayAI proudly secured 1st place in the prestigious DigiPay Pro NPCI Competition, organized by NPCI during the IIT Bombay Techfest 2024.
+| Path | What it is |
+|---|---|
+| [`fraud_detection/`](fraud_detection/) | The active ML platform: dataset-agnostic schema/adapter layer, conditional WGAN-GP, GraphSAGE/GAT/HGT/R-GCN/hypergraph convolution, XGBoost baseline, autoencoder + IsolationForest anomaly detectors, a calibrated stacking ensemble, the generalized multi-domain graph schema, the AML domain, and an unsupervised bank-statement analysis module. |
+| [`AI_model_server_Flask/`](AI_model_server_Flask/) | Flask API serving both the legacy tabular model and the new graph-ensemble/statement-analysis endpoints. |
+| [`fraudAI_Frontend_React/`](fraudAI_Frontend_React/) | The main React app (dashboard, transactions, statement upload). |
+| [`shieldpay-landing page/`](shieldpay-landing%20page/) | A separate marketing/landing site, not wired to the ML backend. |
+| [`AI_model_Py_Scripts/`](AI_model_Py_Scripts/) | The original notebook-based GAN + Random Forest prototype. Kept for reference; superseded by `fraud_detection/`. |
+| [`research_paper/`](research_paper/) | Written summary of the architecture, methodology, and results. |
+| [`SystemDesignDiagrams/`](SystemDesignDiagrams/) | Architecture diagrams for the frontend/product flow. |
 
-- Event Highlights
-   - 🎯 Objective:
-       -  Develop Generative AI or Privacy-Preserving AI solutions for:
-       - Synthetic Data Generation to improve fraud detection accuracy while ensuring privacy.
-       - Fraud Detection to address evolving fraud patterns using AI-driven insights.
-  
-- 💰 Prize Pool: ₹1,00,000.
-  
-- 📅 Key Dates:
-  - Registration Deadline: December 5, 2024
-  - Round 1 Submission: December 6, 2024
-  - Final Presentation at IIT bombay TechFest: December 18, 2024
-  
-Why SafePayAI Stood Out
+## Getting started
 
-- 🚀 Innovative Approach: Combined GANs and Random Forest models to achieve 95% accuracy in fraud detection.
-- 🌍 Real-World Applicability: Designed a scalable, future-proof fraud detection solution adaptable to payment systems like UPI.
-- 👩‍💻 User-Centric Design: Created a responsive UI with Google Sign-In, dashboards, and real-time alerts.
+### ML platform (`fraud_detection/`)
 
+```bash
+cd fraud_detection
+pip install -r requirements.txt
+pip install -e .
+```
 
----
+PyTorch Geometric's accelerated extensions (`torch_scatter`, `torch_sparse`, ...) need a separate, OS/CUDA-specific install step — see [`fraud_detection/docs/INSTALL_PYG.md`](fraud_detection/docs/INSTALL_PYG.md). Everything runs without them, just slower.
 
-### 🏆 DigiPay Pro NPCI Competition Highlights
-![Award Ceremony](https://imgur.com/suSs4H5.png)
+Generate data and train the payments comparison table:
 
+```bash
+python -m fraud_detection.cli generate-data --output data/synthetic_relational.csv
+python -m fraud_detection.training.train_hgnn --data data/synthetic_relational.csv
+```
 
-*Our team receiving the award at IIT Bombay Techfest 2024.*
+Or the AML domain:
 
----
+```python
+from fraud_detection.domains.aml.aml_generator import generate_aml_transaction_dataset
+generate_aml_transaction_dataset(output_csv="data/aml_transactions.csv")
+```
 
+```bash
+python -m fraud_detection.training.train_aml --data data/aml_transactions.csv
+```
 
-![Photo with Coordinator](https://imgur.com/XdLtx1I.png)
+Run the test suite (73 tests as of this writing):
 
+```bash
+pytest fraud_detection/tests/
+```
 
-*Team SafePayAI with the event coordinator at the IIT Bombay Techfest.*
+See [`fraud_detection/docs/DATASETS.md`](fraud_detection/docs/DATASETS.md) for the full dataset catalogue (including the IEEE-CIS portability adapter) and [`fraud_detection/fraud_detection/domains/README.md`](fraud_detection/fraud_detection/domains/README.md) for the recipe to add a new fraud domain.
 
+### Backend API (`AI_model_server_Flask/`)
 
+```bash
+cd AI_model_server_Flask
+pip install -r ../fraud_detection/requirements.txt
+python app.py
+```
 
+Copy `.env.example` (if present) or create `.env` with your own `PAYSTACK_SECRET_KEY`/`MONO_SECRET_KEY`/`ANTHROPIC_API_KEY` — never commit this file. Set `FRAUD_MODEL_DIR` to point at a trained ensemble bundle (produced by `fraud_detection.training.train_ensemble`) to enable `/predict/v2`.
 
-# ⚙️ Key Features
+Current endpoints:
 
-## 🌐 Frontend Features
-- 🔒 User Authentication: Secure login using Google Sign-In.
-- 📊 Transaction Dashboard: View and analyze transaction history.
-- 📱 Responsive UI: Optimized for both mobile and desktop with Tailwind CSS.
-- 🎨 Animations: Interactive transitions powered by Framer Motion.
+| Endpoint | Purpose |
+|---|---|
+| `GET /` | Health check |
+| `POST /predict` | Legacy tabular prediction (flat `features` array, the original Random Forest) |
+| `POST /predict/v2` | Graph-ensemble prediction for a `transaction_id` already in the loaded graph snapshot |
+| `POST /statement/analyze` | Upload a CSV/PDF bank statement for unsupervised fraud-pattern analysis |
+| `POST /verify-account` | Paystack account-name resolution |
+| `POST /mono/exchange`, `GET /mono/account/<id>`, `GET /mono/transactions/<id>`, `POST /mono/batch-predict` | Mono Open Banking integration |
 
-## 🧠 Backend Features
-- 🧪 AI-Powered Fraud Detection: Integrated GANs and Random Forest classifiers for fraud detection.
-- ⚡ Real-Time Analysis: Instant fraud predictions through APIs with pre-trained models.
-- 🔄 Data Augmentation: GANs generate synthetic datasets for improved model performance.
-- 📂 Database Integration: Firebase backend to store UPI IDs, transaction history, and analytics.
----
+### Frontend (`fraudAI_Frontend_React/`)
 
-### **Frontend**  
-- 🌟 [React](https://reactjs.org/)  
-- ⚡ [Vite](https://vitejs.dev/)  
-- 🎨 [Tailwind CSS](https://tailwindcss.com/)  
-- 🎭 [Framer Motion](https://www.framer.com/motion/)  
-- 🛠️ [Radix UI](https://www.radix-ui.com/)
-- 
-### **Backend**  
-- 🐍 [Python](https://www.python.org/)  
-- 🌐 [Flask](https://flask.palletsprojects.com/)  
-- 🔥 [Firebase](https://firebase.google.com/)  
-- 🤖 [Generative Adversarial Networks (GAN)](https://en.wikipedia.org/wiki/Generative_adversarial_network)  
-- 🌳 [Random Forest](https://scikit-learn.org/stable/modules/ensemble.html#forest) 
+```bash
+cd fraudAI_Frontend_React
+npm install
+npm run dev
+```
 
+Opens at `http://localhost:5173` by default (Vite). Needs its own `.env` with Firebase config — see the `VITE_FIREBASE_*` keys referenced in `src/components/logic/firebase.js`.
 
----
+## Project history
 
-# User Interface Snapshots
-
-![Dashboard UI](https://i.imgur.com/1mgOS8m.png)
-
-*Our SafePay AI User Dashboard UI*
-
----
-
-![Fraud Detection UI](https://i.imgur.com/4h5D08o.png)
-
-*Our SafePay AI Fraud Detection Warning UI*
-
----
-
-![Recent Transaction UI](https://i.imgur.com/6AwLhGA.png)
-
-*Our SafePay Recent Transaction UI*
-
-
-
-## Installation
-
-### Setup:
-1. Clone the Main repository:
-   ```bash
-   git clone https://github.com/Shabopp/FraudDetectionUsingGAN.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd FraudDetectionUsingGAN
-
-   ```
-
-### Frontend Setup:
-
-1. Navigate to the Frontend directory:
-   ```bash
-   cd fraudAI_Frontend_React
-
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-4. Open the app in your browser at [http://localhost:3000](http://localhost:3000).
-
-### Backend Setup:
-
-1. Navigate to the backend directory:
-   ```bash
-   cd ../AI_model_server_Flask
-
-   ```
-2. Install required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Ensure the trained model file `best_rf_model.pkl` is present in the directory.
-4. Start the Flask server:
-   ```bash
-   python app.py
-   ```
-5. The API will be accessible at [http://127.0.0.1:5000/](http://127.0.0.1:5000/).
-
----
-
-![AI Model visual Diagram](https://raw.githubusercontent.com/Shabopp/FraudDetectionUsingGAN/main/SystemDesignDiagrams/SystemDesign.png)
-
-# 📈 AI Model Workflow
-
-The core of SafePayAI lies in its AI-driven fraud detection mechanism, developed using a combination of GAN and Random Forest models. Here’s an in-depth breakdown:
-
-### Step 1: Data Preparation
-- **Load Dataset**: Start with a transactional dataset containing both fraudulent and non-fraudulent records. Ensure it is preprocessed (e.g., handling missing values, scaling, and encoding).
-- **Split Data**: Divide into training (80%) and testing (20%) sets.
-- **Feature Engineering**: Normalize numerical features and one-hot encode categorical variables.
-
-### Step 2: Train a GAN for Synthetic Data Generation
-- **GAN Architecture**:
-  - Generator: Creates synthetic transaction data from random noise.
-  - Discriminator: Differentiates between real and synthetic data.
-- **Training Process**:
-  - Alternate between training the discriminator on real and synthetic data and training the generator to fool the discriminator.
-  - Use Binary Cross-Entropy (BCE) loss for both.
-- **Validation**: Evaluate synthetic data quality through visualization and statistical metrics.
-
-### Step 3: Use Synthetic Data to Augment the Dataset
-- **Generate Synthetic Data**: Use the trained GAN to create synthetic transactions for both fraud and non-fraud labels.
-- **Merge Data**: Combine synthetic and real data to balance the dataset and reduce class imbalance.
-
-### Step 4: Train the Random Forest Model
-- **Dataset Splitting**: Split the augmented dataset into training and validation sets.
-- **Training**: Train the Random Forest model using the sklearn library.
-- **Hyperparameter Tuning**: Optimize parameters (e.g., n_estimators, max_depth) using cross-validation.
-- **Evaluation**: Assess model performance using metrics like accuracy, precision, recall, F1-score, and AUC-ROC.
-
-### Step 5: Fraud Prediction Workflow
-- **Input Processing**: Preprocess transaction data received from the frontend.
-- **Prediction**: Pass processed data through the trained Random Forest model to classify transactions as `Fraud` or `Not Fraud`.
-- **Output**: Display results on the frontend dashboard in real time.
-
-### Step 6: Workflow Automation
-- Modularized preprocessing, GAN training, synthetic data generation, and Random Forest training into reusable functions.
-- Integrated the workflow into a script for seamless execution.
-
----
-![AI Model visual Diagram](https://raw.githubusercontent.com/Shabopp/FraudDetectionUsingGAN/main/SystemDesignDiagrams/AIMODEL_VISUAL.png)
-
-📊 Fraud Detection Parameters
-
-1. **Transaction Amount Anomalies**: Detects transactions that significantly deviate from a user's historical average or usual behavior.
-
-2. **Transaction Frequency**: Flags unusual spikes in the number of transactions within a short time period (e.g., multiple transactions in minutes).
-
-3. **Recipient Verification Status**: Checks whether the recipient is verified, registered recently, or flagged as suspicious.
-
-4. **Recipient Blacklist Status**: Identifies transactions to or from blacklisted UPI IDs, accounts, or merchants.
-
-5. **Device Fingerprinting**: Analyzes mismatches in the device ID, browser, or OS used for the transaction compared to prior user sessions.
-
-6. **VPN or Proxy Usage**: Flags transactions originating from masked IP addresses, indicating possible fraud attempts.
-
-7. **Geo-Location Flags**: Identifies if transactions are initiated from unusual or high-risk geolocations.
-
-8. **Behavioral Biometrics**: Monitors user interaction patterns, such as typing speed or mouse movement, for deviations from typical behavior.
-
-9. **Time Since Last Transaction with Recipient**: Evaluates if the recipient is a new contact or there has been a significant time gap since the last transaction.
-
-10. **Social Trust Score**: Scores recipients based on their relationship with the user (e.g., presence in contact list or prior transactions).
-
-11. **Account Age**: Analyzes the age of the user’s account, flagging newly created accounts performing high-risk transactions.
-
-12. **High-Risk Transaction Times**: Flags transactions occurring during non-business hours or at unusual times.
-
-13. **Past Fraudulent Behavior Flags**: Checks if the user or recipient has been flagged for prior fraudulent activity.
-
-14. **Location-Inconsistent Transactions**: Detects transactions initiated from multiple geolocations in a short time frame, indicating compromised credentials.
-
-15. **Normalized Transaction Amount**: Compares the transaction amount against normalized values for similar users or demographic profiles.
-
-16. **Transaction Context Anomalies**: Flags transactions that do not align with the user's typical spending habits (e.g., sudden large purchases).
-
-17. **Fraud Complaints Count**: Analyzes the frequency of fraud complaints linked to a UPI ID, device, or account.
-
-18. **Merchant Category Mismatch**: Checks if the merchant's behavior aligns with their declared category (e.g., high-value transactions for a low-value merchant).
-
-19. **User Daily Limit Exceeded**: Flags transactions that exceed predefined daily transaction limits.
-
-20. **Recent High-Value Transaction Flags**: Detects if the user recently performed a high-value transaction, increasing risk for subsequent fraudulent activity.
-
----
-
-# 🔗 API Endpoints
-
-### Base URL: `http://127.0.0.1:5000/`
-
-#### Home
-- **GET** `/`
-  - Returns a welcome message.
-
-#### Predict
-- **POST** `/predict`
-  - **Request Body**: JSON object containing features for prediction.
-    ```json
-    {
-      "features": [value1, value2, value3, ...]
-    }
-    ```
-  - **Response**: JSON object containing the prediction.
-    ```json
-    {
-      "prediction": ["Fraud" or "Not Fraud"]
-    }
-    ```
-  - **Error Responses**:
-    - 400: No input data provided.
-    - 500: Internal server error.
-
----
-
-# 🏗️ System Architecture
-
-1. Google Sign-In (Authentication)
-Purpose: Enables secure user authentication using Google accounts.
-Workflow:
-Users authenticate via Google, generating a unique user ID (UID).
-This UID is linked to the user's data in Firebase Firestore.
-
-2. Creating/Selecting UPI ID
-Purpose: Assigns a unique UPI ID to users upon first login or allows selection from existing ones.
-Details:
-First-time users are automatically assigned a UPI ID (e.g., user12345@bank).
-Existing users can select from their linked UPI IDs.
-UPI IDs are stored under the user's profile in Firestore.
-
-3. Entering Transaction Details
-Purpose: Allows users to input recipient UPI ID, transaction amount, and remarks.
-Workflow:
-Users manually enter or select the recipient's UPI ID.
-Fraud detection verification is triggered via a "Verify Fraud Status" button.
-
-4. Fraud Check (Verification Process)
-Purpose: Determines whether the recipient's UPI ID is flagged for fraud.
-Workflow:
-System checks the Firestore fraud database for the recipient UPI ID.
-If unflagged, simulated fraud detection is applied for new UPI IDs or reuses prior predictions for existing ones.
-
-5. AI Fraud Detection Call
-Purpose: Utilizes AI to analyze transaction details and predict fraud.
-Workflow:
-Transaction data is sent to the AI service for fraud probability analysis.
-Based on the AI’s response:
-Fraud: User sees a warning.
-Not Fraud: Transaction proceeds.
-
-6. Transaction Execution
-Purpose: Processes verified transactions.
-Workflow:
-If deemed not fraudulent, the system processes the transaction (simulated in this demo).
-Status is recorded in the transaction history.
-
-7. Storing Transaction History
-Purpose: Maintains a record of transactions for auditing and display.
-Workflow:
-Details such as amount, recipient, timestamp, and fraud status are saved in Firestore.
-History is accessible under the user’s profile and displayed in the app's UI.
-
-8. User Interface (UI) Workflow
-Main Screen:
-Displays the "Send Money" page with inputs for transaction details and fraud verification.
-Transaction Status:
-Fraudulent transactions show warnings and are blocked.
-Verified transactions activate the "Send Money" button.
-Recent Transactions:
-Displays historical data, including recipient, amount, date, and fraud status.
-
-
-![Data Flow Diagram](https://raw.githubusercontent.com/Shabopp/FraudDetectionUsingGAN/main/SystemDesignDiagrams/WorkFlowDiagram.png)
-
-
+This project originated as a hackathon prototype (1st place, DigiPay Pro NPCI Competition, IIT Bombay Techfest 2024) combining a GAN and a Random Forest classifier. That original implementation is preserved in `AI_model_Py_Scripts/` for reference; the system has since been substantially rebuilt into the graph-native, multi-domain platform described above.
