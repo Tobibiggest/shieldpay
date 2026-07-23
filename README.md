@@ -5,6 +5,18 @@ A fraud detection system built around one idea: coordinated fraud is a **network
 A full write-up of the methodology and results lives in [`research_paper/`](https://www.researchgate.net/publication/410744657_A_Generalized_Heterogeneous_Graph_Neural_Network_Architecture_for_Multi-Domain_Financial_Fraud_Detection_From_Payment_Fraud_to_Anti-Money-Laundering_Monitoring/).
 
 ## Results at a glance
+<img width="1920" height="916" alt="Screenshot (647)" src="https://github.com/user-attachments/assets/5ba430ba-88ab-447a-b52a-563957544bee" />
+
+<img width="1920" height="910" alt="Screenshot (645)" src="https://github.com/user-attachments/assets/de0b0138-e016-4e18-8edb-f0bce3380132" />
+<img width="1920" height="872" alt="Screenshot (649)" src="https://github.com/user-attachments/assets/c239cf2e-c03a-4991-97a2-4e73fd2797cb" />
+<img width="1920" height="897" alt="Screenshot (648)" src="https://github.com/user-attachments/assets/9685e983-99f0-41d1-a6ba-e5c6b0cd8340" />
+<img width="1920" height="888" alt="Screenshot (650)" src="https://github.com/user-attachments/assets/6f3d970e-fbe1-4bc1-8ea4-940b8d9926c6" />
+<img width="1920" height="905" alt="Screenshot (651)" src="https://github.com/user-attachments/assets/261a8f09-b2bc-4ae3-ac1b-8a4d28fa89ef" />
+
+<img width="1920" height="903" alt="Screenshot (652)" src="https://github.com/user-attachments/assets/ddd357de-d4ac-49e6-8e4b-d3f351622f92" />
+
+<img width="1920" height="909" alt="Screenshot (654)" src="https://github.com/user-attachments/assets/9e3c7eda-ff4d-4670-9d03-9a8e985678b0" />
+
 
 **Payments** (synthetic benchmark, ~3% fraud, temporal split):
 
