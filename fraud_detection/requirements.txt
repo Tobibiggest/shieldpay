@@ -11,6 +11,10 @@ flask-cors>=5.0
 python-dotenv>=1.0
 requests>=2.31
 
+# Statement analysis: PDF parsing via Claude (structured outputs) + pypdf precheck
+anthropic>=0.118
+pypdf>=5.0
+
 # Gradient-boosted trees
 xgboost>=2.0
 lightgbm>=4.3

@@ -1,6 +1,15 @@
-import pytest
+from io import BytesIO
+from types import SimpleNamespace
 
+import pytest
+from pypdf import PdfWriter
+
+from fraud_detection.statement_analysis.parsers import pdf_parser
 from fraud_detection.statement_analysis.parsers.csv_parser import StatementParseError
+from fraud_detection.statement_analysis.parsers.pdf_parser import (
+    ExtractedStatement,
+    ExtractedTransaction,
+)
 from fraud_detection.statement_analysis.statement_analyzer import analyze_statement
 
 
@@ -33,11 +42,27 @@ def test_analyze_statement_unsupported_extension_raises():
         analyze_statement(b"not a real file", "statement.txt")
 
 
-def test_analyze_statement_pdf_before_phase2_raises_not_implemented():
-    # Phase 1 state: pdf_parser.py doesn't exist yet (added in Phase 2), so
-    # this should degrade to a clear NotImplementedError rather than a
-    # confusing ImportError leaking out of analyze_statement. Once Phase 2
-    # adds real PDF support this test is superseded by pdf_parser-specific
-    # tests and should be removed.
-    with pytest.raises(NotImplementedError):
-        analyze_statement(b"%PDF-1.4 fake", "statement.pdf")
+def test_analyze_statement_pdf_end_to_end(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    transactions = [
+        ExtractedTransaction(date="2025-01-01", description="Grocery Store", amount=45.20, direction="debit", balance=954.80),
+        ExtractedTransaction(date="2025-01-02", description="Salary", amount=2000.00, direction="credit", balance=2954.80),
+    ]
+    fake_response = SimpleNamespace(
+        stop_reason="end_turn",
+        parsed_output=ExtractedStatement(transactions=transactions, parse_confidence="high"),
+    )
+    monkeypatch.setattr(pdf_parser, "_call_anthropic_extract", lambda client, file_bytes: fake_response)
+
+    report = analyze_statement(pdf_bytes, "statement.pdf")
+
+    assert report["data_quality"]["parsed_transaction_count"] == 2
+    assert report["data_quality"]["parse_confidence"] == "high"
+    assert len(report["transactions"]) == 2

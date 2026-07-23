@@ -80,7 +80,7 @@ const StatementUpload = () => {
             <div className="font-mono text-[10px] uppercase tracking-widest opacity-40 mb-1">Statement Analysis</div>
             <h1 className="font-display italic text-3xl font-black">Upload Bank Statement</h1>
             <p className="font-mono text-[11px] opacity-50 mt-2 max-w-2xl">
-              Upload a CSV bank statement to surface fraud-relevant patterns and statistics computed
+              Upload a CSV or PDF bank statement to surface fraud-relevant patterns and statistics computed
               fresh from your own transaction history. Nothing here is compared against other users'
               data, and no data is retained after analysis.
             </p>
@@ -92,10 +92,10 @@ const StatementUpload = () => {
               <label className="flex items-center gap-2 px-4 py-2 border border-[var(--border)] font-mono text-[11px] uppercase tracking-widest cursor-pointer hover:border-[var(--accent)] transition-colors">
                 <Upload className="h-3.5 w-3.5" />
                 Choose File
-                <input type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+                <input type="file" accept=".csv,.pdf" className="hidden" onChange={handleFileChange} />
               </label>
               <span className="font-mono text-[11px] opacity-60">
-                {file ? file.name : "No file selected (.csv)"}
+                {file ? file.name : "No file selected (.csv or .pdf)"}
               </span>
               <button
                 onClick={handleUpload}
