@@ -1,0 +1,32 @@
+# --- Secrets: never commit these ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Broken/incomplete committed venv (missing numpy/pandas/sklearn/tensorflow) --
+# regenerate from fraud_detection/requirements.txt instead of relying on this.
+AI_model_server_Flask/env/
+.venv/
+env/
+
+# --- ML artifacts & generated data (regenerable via scripts, not source) ---
+fraud_detection/artifacts/
+fraud_detection/data/*.csv
+
+# --- Node ---
+node_modules/
+
+# --- Claude Code local/session state (machine-specific, not shared config) ---
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# --- OS ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+# Config for the IEEE-CIS adapter. Requires train_transaction.csv (and
+# optionally train_identity.csv) downloaded with your own Kaggle credentials
+# -- see fraud_detection/docs/DATASETS.md. Not auto-fetched by this repo.
+dataset_name: ieee_cis
+path: data/ieee_cis
+transaction_file: train_transaction.csv
+identity_file: train_identity.csv

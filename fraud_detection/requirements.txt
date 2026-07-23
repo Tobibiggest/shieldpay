@@ -1,0 +1,30 @@
+# Core
+numpy>=1.26,<2.0
+pandas>=2.1
+scikit-learn>=1.4
+pyyaml>=6.0
+joblib>=1.3
+
+# Serving (matches AI_model_server_Flask)
+flask>=3.1
+flask-cors>=5.0
+python-dotenv>=1.0
+requests>=2.31
+
+# Gradient-boosted trees
+xgboost>=2.0
+lightgbm>=4.3
+
+# Viz / eval
+matplotlib>=3.8
+seaborn>=0.13
+
+# Deep learning + graphs
+# NOTE: torch-geometric's accelerated extensions (torch_scatter, torch_sparse,
+# torch_cluster, torch_spline_conv) are NOT listed here — their install command
+# is OS/CUDA-specific. See docs/INSTALL_PYG.md before running any GNN/HGNN code.
+torch>=2.2,<3.0
+torch-geometric>=2.5
+
+# Testing
+pytest>=8.0

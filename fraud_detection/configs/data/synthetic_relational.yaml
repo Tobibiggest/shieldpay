@@ -1,0 +1,16 @@
+# Reference defaults for `python -m fraud_detection.cli generate-data`.
+# Not auto-loaded yet (Phase 1 CLI takes plain flags) -- kept here so the
+# generation parameters used for a given dataset snapshot are reproducible
+# and documented, and so later training configs can point at this file.
+n_transactions: 20000
+n_accounts: 2000
+n_devices: 1200
+n_ips: 1200
+n_merchants: 300
+fraud_ratio: 0.03
+n_fraud_rings: 40
+fraud_ring_size: [3, 8]
+seed: 42
+start_date: "2025-01-01"
+end_date: "2025-06-30"
+output_csv: "data/synthetic_relational.csv"

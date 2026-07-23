@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraud-detection"
+version = "0.1.0"
+description = "Graph-aware ensemble fraud detection: conditional GAN augmentation, GraphSAGE/GAT, Heterogeneous Graph Transformer, gradient-boosted trees, and anomaly detection, unified behind a dataset-agnostic schema."
+requires-python = ">=3.10"
+
+[project.scripts]
+fraud-detection = "fraud_detection.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["fraud_detection*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
