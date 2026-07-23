@@ -2,7 +2,7 @@
 
 A fraud detection system built around one idea: coordinated fraud is a **network** problem, not a per-row problem. Mule networks, layering chains, and smurfing rings are defined by relationships between accounts — shared devices, shared IP addresses, funds passed hop-to-hop through intermediaries — not by any single transaction's own features. A model that scores each transaction independently cannot see that structure no matter how well-tuned it is. This project makes the transaction graph a first-class model input, evaluates it against a strong tabular baseline under a benchmark specifically designed so the comparison is meaningful (fraud is feature-camouflaged, detectable only via graph structure), and generalizes the architecture to more than one fraud domain.
 
-A full write-up of the methodology and results lives in [`research_paper/`](research_paper/).
+A full write-up of the methodology and results lives in [`research_paper/`](https://www.researchgate.net/publication/410744657_A_Generalized_Heterogeneous_Graph_Neural_Network_Architecture_for_Multi-Domain_Financial_Fraud_Detection_From_Payment_Fraud_to_Anti-Money-Laundering_Monitoring/).
 
 ## Results at a glance
 
