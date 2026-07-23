@@ -135,7 +135,7 @@ pip install -r ../fraud_detection/requirements.txt
 python app.py
 ```
 
-Copy `.env.example` (if present) or create `.env` with your own `PAYSTACK_SECRET_KEY`/`MONO_SECRET_KEY`/`ANTHROPIC_API_KEY` — never commit this file. Set `FRAUD_MODEL_DIR` to point at a trained ensemble bundle (produced by `fraud_detection.training.train_ensemble`) to enable `/predict/v2`.
+Copy `.env.example` (if present) or create `.env` with your own `PAYSTACK_SECRET_KEY`/`MONO_SECRET_KEY`/`GEMINI_API_KEY` — never commit this file. Set `FRAUD_MODEL_DIR` to point at a trained ensemble bundle (produced by `fraud_detection.training.train_ensemble`) to enable `/predict/v2`.
 
 Current endpoints:
 

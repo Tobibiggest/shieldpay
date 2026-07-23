@@ -21,7 +21,7 @@ Environment variables (Railway dashboard -> service -> Variables):
 |---|---|---|
 | `PAYSTACK_SECRET_KEY` | for `/verify-account` | |
 | `MONO_SECRET_KEY` | for `/mono/*` endpoints | |
-| `ANTHROPIC_API_KEY` | for PDF statement upload | Needs a funded Anthropic API credit balance -- separate from a Claude.ai/Pro subscription. |
+| `GEMINI_API_KEY` | for PDF statement upload | Get one from [Google AI Studio](https://aistudio.google.com/apikey). |
 | `FRAUD_MODEL_DIR` | optional | Only relevant if you separately provide the trained ensemble bundle (see note below). |
 
 Deploy this service **first** -- the frontend and landing page both need its

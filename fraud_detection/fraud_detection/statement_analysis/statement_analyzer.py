@@ -19,11 +19,11 @@ def analyze_statement(file_bytes: bytes, filename: str) -> Dict:
     elif ext == ".pdf":
         try:
             from .parsers.pdf_parser import parse_pdf_statement  # local import: avoids requiring
-            # the `anthropic`/`pypdf` deps for callers that only ever use the CSV path (Phase 1).
+            # the `google-genai`/`pypdf` deps for callers that only ever use the CSV path (Phase 1).
         except ModuleNotFoundError as e:
             raise NotImplementedError(
-                "PDF statement analysis requires the 'anthropic' and 'pypdf' packages "
-                "(pip install -r requirements.txt) and an ANTHROPIC_API_KEY."
+                "PDF statement analysis requires the 'google-genai' and 'pypdf' packages "
+                "(pip install -r requirements.txt) and a GEMINI_API_KEY."
             ) from e
         df, raw_row_count, parse_confidence = parse_pdf_statement(file_bytes)
         return build_statement_report(df, raw_row_count=raw_row_count, parse_confidence=parse_confidence)

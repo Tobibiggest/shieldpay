@@ -24,22 +24,23 @@ def _make_pdf_bytes(num_pages: int = 1, encrypt_password: str = None) -> bytes:
     return buf.getvalue()
 
 
-def _fake_response(transactions, parse_confidence="high", stop_reason="end_turn"):
-    return SimpleNamespace(
-        stop_reason=stop_reason,
-        parsed_output=ExtractedStatement(
+def _fake_response(transactions, parse_confidence="high", finish_reason="STOP"):
+    text = None
+    if transactions is not None:
+        text = ExtractedStatement(
             transactions=transactions,
             parse_confidence=parse_confidence,
-        ) if transactions is not None else None,
-    )
+        ).model_dump_json()
+    candidate = SimpleNamespace(finish_reason=finish_reason)
+    return SimpleNamespace(candidates=[candidate], text=text)
 
 
 @pytest.fixture(autouse=True)
 def _fake_api_key(monkeypatch):
-    # anthropic.Anthropic() is constructed inside parse_pdf_statement even
-    # though the real network call is monkeypatched out below -- give it a
-    # key so construction doesn't fail.
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    # genai.Client() is constructed inside parse_pdf_statement even though
+    # the real network call is monkeypatched out below -- give it a key so
+    # construction doesn't fail.
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
 
 def test_precheck_rejects_corrupt_pdf():
@@ -67,7 +68,7 @@ def test_parse_pdf_statement_success(monkeypatch):
         ExtractedTransaction(date="2025-01-02", description="Salary", amount=2000.00, direction="credit", balance=2954.80),
     ]
     monkeypatch.setattr(
-        pdf_parser, "_call_anthropic_extract",
+        pdf_parser, "_call_gemini_extract",
         lambda client, file_bytes: _fake_response(transactions, parse_confidence="high"),
     )
 
@@ -87,8 +88,8 @@ def test_parse_pdf_statement_raises_on_truncated_output(monkeypatch):
         ExtractedTransaction(date="2025-01-01", description="x", amount=1.0, direction="debit"),
     ]
     monkeypatch.setattr(
-        pdf_parser, "_call_anthropic_extract",
-        lambda client, file_bytes: _fake_response(transactions, stop_reason="max_tokens"),
+        pdf_parser, "_call_gemini_extract",
+        lambda client, file_bytes: _fake_response(transactions, finish_reason="MAX_TOKENS"),
     )
 
     with pytest.raises(StatementParseError, match="truncated"):
@@ -98,9 +99,20 @@ def test_parse_pdf_statement_raises_on_truncated_output(monkeypatch):
 def test_parse_pdf_statement_raises_on_no_transactions_extracted(monkeypatch):
     pdf_bytes = _make_pdf_bytes(num_pages=1)
     monkeypatch.setattr(
-        pdf_parser, "_call_anthropic_extract",
+        pdf_parser, "_call_gemini_extract",
         lambda client, file_bytes: _fake_response([], parse_confidence="low"),
     )
 
     with pytest.raises(StatementParseError):
+        parse_pdf_statement(pdf_bytes)
+
+
+def test_parse_pdf_statement_raises_on_no_candidates(monkeypatch):
+    pdf_bytes = _make_pdf_bytes(num_pages=1)
+    monkeypatch.setattr(
+        pdf_parser, "_call_gemini_extract",
+        lambda client, file_bytes: SimpleNamespace(candidates=[], text=None),
+    )
+
+    with pytest.raises(StatementParseError, match="blocked"):
         parse_pdf_statement(pdf_bytes)

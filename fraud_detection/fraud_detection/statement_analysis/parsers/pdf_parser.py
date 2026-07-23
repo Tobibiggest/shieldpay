@@ -1,30 +1,26 @@
-"""PDF bank-statement parsing via Claude's native PDF document input plus
+"""PDF bank-statement parsing via Gemini's native PDF document input plus
 structured outputs. Kept in its own module (not imported at package import
 time) so callers that only ever use the CSV path don't need the
-`anthropic`/`pypdf` dependencies -- see statement_analyzer.py's local import.
+`google-genai`/`pypdf` dependencies -- see statement_analyzer.py's local import.
 """
 
-import base64
 from io import BytesIO
 from typing import List, Literal, Optional, Tuple
 
-import anthropic
 import pandas as pd
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 from pypdf import PdfReader
 
 from .csv_parser import StatementParseError
 
-MODEL = "claude-opus-4-8"
-# Non-streaming requests are capped by the SDK to ~10 minutes of estimated
-# generation time (see Anthropic._calculate_nonstreaming_timeout): that works
-# out to max_tokens <= 600*128000/3600 ~= 21333 for this model. Stay safely
-# under that rather than switching to streaming.
+MODEL = "gemini-3.6-flash"
+# Gemini's documented PDF input limit is 50MB / 1000 pages; our own cap is
+# tighter and guards output-token budget (one JSON record per transaction
+# row), not input capacity -- this just protects against pathological
+# uploads (a whole multi-year account history instead of one statement).
 MAX_OUTPUT_TOKENS = 20000
-# Real constraint on extraction quality is output tokens (one JSON record per
-# transaction row), not input pages -- Claude reads the whole 1M-token input
-# context easily. This just guards against pathological uploads (a whole
-# multi-year account history instead of one statement).
 MAX_PDF_PAGES = 150
 
 
@@ -77,48 +73,54 @@ def _precheck_pdf(file_bytes: bytes) -> None:
         )
 
 
-def _call_anthropic_extract(client: "anthropic.Anthropic", file_bytes: bytes):
+def _call_gemini_extract(client: "genai.Client", file_bytes: bytes):
     """Isolated so tests can monkeypatch this single function and inject a
     fake response, without needing a real API key or network access."""
-    b64 = base64.standard_b64encode(file_bytes).decode("utf-8")
-    return client.messages.parse(
+    return client.models.generate_content(
         model=MODEL,
-        max_tokens=MAX_OUTPUT_TOKENS,
-        messages=[{
-            "role": "user",
-            "content": [
-                {
-                    "type": "document",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "application/pdf",
-                        "data": b64,
-                    },
+        contents=[
+            types.Part.from_bytes(data=file_bytes, mime_type="application/pdf"),
+            EXTRACTION_PROMPT,
+        ],
+        config={
+            "max_output_tokens": MAX_OUTPUT_TOKENS,
+            "response_format": {
+                "text": {
+                    "mime_type": "application/json",
+                    "schema": ExtractedStatement.model_json_schema(),
                 },
-                {"type": "text", "text": EXTRACTION_PROMPT},
-            ],
-        }],
-        output_format=ExtractedStatement,
+            },
+        },
     )
 
 
 def parse_pdf_statement(file_bytes: bytes) -> Tuple[pd.DataFrame, int, str]:
     """Returns (normalized_df, raw_row_count, parse_confidence) -- same
-    contract as parse_csv_statement, plus the confidence Claude reported
+    contract as parse_csv_statement, plus the confidence Gemini reported
     for its own extraction (PDF extraction, unlike CSV parsing, isn't exact)."""
     _precheck_pdf(file_bytes)
 
-    client = anthropic.Anthropic()
-    response = _call_anthropic_extract(client, file_bytes)
+    client = genai.Client()
+    response = _call_gemini_extract(client, file_bytes)
 
-    if response.stop_reason == "max_tokens":
+    if not response.candidates:
+        raise StatementParseError("Gemini did not return a response for this PDF (it may have been blocked).")
+
+    if response.candidates[0].finish_reason == "MAX_TOKENS":
         raise StatementParseError(
             "Statement is too large to extract in one pass (output was truncated). "
             "Try splitting the PDF into smaller date ranges."
         )
 
-    extracted = response.parsed_output
-    if extracted is None or not extracted.transactions:
+    if not response.text:
+        raise StatementParseError("Could not extract any transactions from this PDF.")
+
+    try:
+        extracted = ExtractedStatement.model_validate_json(response.text)
+    except Exception as e:
+        raise StatementParseError(f"Could not parse the extraction result: {e}") from e
+
+    if not extracted.transactions:
         raise StatementParseError("Could not extract any transactions from this PDF.")
 
     raw_row_count = len(extracted.transactions)

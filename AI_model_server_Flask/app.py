@@ -41,7 +41,8 @@ try:
 except Exception as e:
     print(f"Graph-aware ensemble not loaded ({e}); /predict/v2 will return 503 until it is trained.")
 
-import anthropic
+import httpx
+from google.genai import errors as genai_errors
 
 from fraud_detection.statement_analysis.parsers.csv_parser import StatementParseError
 from fraud_detection.statement_analysis.statement_analyzer import analyze_statement
@@ -130,12 +131,16 @@ def statement_analyze():
         return jsonify({"error": str(e)}), 400
     except NotImplementedError as e:
         return jsonify({"error": str(e)}), 501
-    except anthropic.RateLimitError:
-        return jsonify({"error": "PDF extraction is rate-limited right now. Please try again shortly."}), 503
-    except (anthropic.APITimeoutError, anthropic.APIConnectionError):
+    except genai_errors.ClientError as e:
+        if e.code == 429:
+            return jsonify({"error": "PDF extraction is rate-limited right now. Please try again shortly."}), 503
+        if e.code in (401, 403):
+            return jsonify({"error": "PDF extraction is not configured on this server (invalid or missing API key)."}), 500
+        return jsonify({"error": f"PDF extraction request was rejected: {e.message}"}), 400
+    except genai_errors.ServerError:
+        return jsonify({"error": "PDF extraction service is temporarily unavailable. Please try again."}), 504
+    except (httpx.TimeoutException, httpx.ConnectError):
         return jsonify({"error": "Could not reach the PDF extraction service. Please try again."}), 504
-    except anthropic.AuthenticationError:
-        return jsonify({"error": "PDF extraction is not configured on this server (invalid or missing API key)."}), 500
     except Exception as e:
         return jsonify({"error": f"Unexpected error analyzing statement: {e}"}), 500
 

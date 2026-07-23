@@ -43,7 +43,7 @@ def test_analyze_statement_unsupported_extension_raises():
 
 
 def test_analyze_statement_pdf_end_to_end(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
     writer = PdfWriter()
     writer.add_blank_page(width=200, height=200)
@@ -56,10 +56,10 @@ def test_analyze_statement_pdf_end_to_end(monkeypatch):
         ExtractedTransaction(date="2025-01-02", description="Salary", amount=2000.00, direction="credit", balance=2954.80),
     ]
     fake_response = SimpleNamespace(
-        stop_reason="end_turn",
-        parsed_output=ExtractedStatement(transactions=transactions, parse_confidence="high"),
+        candidates=[SimpleNamespace(finish_reason="STOP")],
+        text=ExtractedStatement(transactions=transactions, parse_confidence="high").model_dump_json(),
     )
-    monkeypatch.setattr(pdf_parser, "_call_anthropic_extract", lambda client, file_bytes: fake_response)
+    monkeypatch.setattr(pdf_parser, "_call_gemini_extract", lambda client, file_bytes: fake_response)
 
     report = analyze_statement(pdf_bytes, "statement.pdf")
 
