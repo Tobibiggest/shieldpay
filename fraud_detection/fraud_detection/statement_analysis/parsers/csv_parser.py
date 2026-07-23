@@ -4,6 +4,7 @@ is the shape every downstream statement-analysis module (`patterns.py`,
 `anomaly_scoring.py`) is written against.
 """
 
+import re
 from io import BytesIO
 from typing import List, Optional, Tuple
 
@@ -21,14 +22,37 @@ class StatementParseError(Exception):
     """Raised when a statement file cannot be parsed into transactions."""
 
 
+def _normalize_header(s: str) -> str:
+    """Strips spaces/underscores/hyphens so aliases match regardless of a
+    bank's spacing convention -- e.g. "money in" (our alias) must match a
+    real export's "MoneyIn" (no space), which a plain substring check on
+    lowercased-only strings misses."""
+    return re.sub(r"[\s_-]+", "", s.strip().lower())
+
+
+_ISO_DATE_RE = re.compile(r"^\d{4}[-/]")
+
+
+def _parse_dates(raw_dates: pd.Series) -> pd.Series:
+    """pandas' vectorized to_datetime infers one format for the whole
+    column, so a blanket dayfirst=True corrupts unambiguous ISO
+    (YYYY-MM-DD) dates too -- it can swap month/day even though the
+    leading 4-digit year makes the field order unambiguous. Only apply
+    dayfirst when the values aren't already year-first."""
+    sample = raw_dates.dropna().astype(str).head(20)
+    looks_iso = bool(len(sample)) and sample.str.match(_ISO_DATE_RE).all()
+    return pd.to_datetime(raw_dates, errors="coerce", dayfirst=not looks_iso)
+
+
 def _find_column(columns: List[str], aliases: List[str]) -> Optional[str]:
-    normalized = {c.strip().lower(): c for c in columns}
-    for alias in aliases:
-        if alias in normalized:
-            return normalized[alias]
-    for col_lower, col_original in normalized.items():
-        for alias in aliases:
-            if alias in col_lower:
+    normalized_cols = {_normalize_header(c): c for c in columns}
+    normalized_aliases = [_normalize_header(a) for a in aliases]
+    for alias in normalized_aliases:
+        if alias in normalized_cols:
+            return normalized_cols[alias]
+    for col_norm, col_original in normalized_cols.items():
+        for alias in normalized_aliases:
+            if alias in col_norm:
                 return col_original
     return None
 
@@ -70,7 +94,7 @@ def parse_csv_statement(file_bytes: bytes) -> Tuple[pd.DataFrame, int]:
     credit_col = _find_column(columns, CREDIT_ALIASES)
 
     df = pd.DataFrame()
-    df["date"] = pd.to_datetime(raw[date_col], errors="coerce")
+    df["date"] = _parse_dates(raw[date_col])
     df["description"] = raw[description_col].astype(str) if description_col else ""
 
     if amount_col is not None:
